@@ -1,39 +1,96 @@
-function rleCompress(input: string): string {
-    if (!/^[01]+$/.test(input)) {
-        throw new Error("The input string must contain only '0' or '1' values.");
-    }
+type CaleulCompression =`${number}[${string}]`;
 
-    let compressed = '';
-    let count = 1;
+function stringCompressor(input: string): string {
 
-    for (let i = 0; i < input.length; i++) {
-        if (input[i] === input[i + 1]) {
-            count++;
-        } else {
-            compressed += input[i] + count;
-            count = 1;
+    let compressionRounds = 0;
+
+    // THIS ALGORITHM RETURNS THE STRING THAT REPRESENTS THE SMALLEST COMPRESSION
+    // FOLLOWING THE FORMAT:
+    // `COMPRESSION_ROUNDS[FINAL_COMPRESSED_STRING]`
+    const caleulCompressionInput: CaleulCompression = `${compressionRounds}[${input}]`;
+    let compressedOptions: CaleulCompression[] = [
+        caleulCompressionInput,
+    ];
+
+    function compressBinaryString(input: string, size: number): string {
+        let encoded = '';
+        let count = 1;
+
+        for (let i = 0; i < input.length; i + size) {
+            // Verifica se o próximo caractere é igual ao atual
+            if (
+                // verifica se existe proxima string do tamanho predefinido
+                i < input.length - size
+                // se a substring atual (do tamanho predefinido) for igual a proxima substring (também do tamanho predefinido)
+                && input.substring(i, i + size) === input.substring(i + size, i + size + size)
+            ) {
+                count++;
+            } else {
+                encoded += count + input.substring(i, i + size);
+                count = 1;
+            }
         }
+        return encoded;
     }
 
-    return compressed;
+    const lengthOptions = getDivisors(input);
+
+    const results = lengthOptions.map((lengthOption) => {
+        return compressBinaryString(input, lengthOption);
+    })
+
+    return findShortestString(results);
 }
 
-function rleDecompress(compressed: string): string {
-    let decompressed = '';
-    let i = 0;
+function isBinaryString(string: string): boolean {
+    return (
+        /^[01]+$/.test(string)
+    );
+}
 
-    while (i < compressed.length) {
-        const char = compressed[i];
-        let count = '';
+function isOdd(number: number): boolean {
+    return (
+        number % 2 === 0
+    );
+}
 
-        i++;
-        while (i < compressed.length && !isNaN(Number(compressed[i]))) {
-            count += compressed[i];
-            i++;
+function countZerosAndOnes(input: CaleulCompression): { zeros: number, ones: number } {
+    const bracketContent = input.match(/\[(.*?)\]/)?.[1];
+
+    let zeros = 0;
+    let ones = 0;
+  
+    if (bracketContent) {
+        for (let char of bracketContent) {
+            if (char === '0') {
+                zeros++;
+            } else if (char === '1') {
+                ones++;
+            }
         }
+    }
+  
+    return { zeros, ones };
+}
 
-        decompressed += char.repeat(Number(count));
+function findShortestString(strings: string[]): string {      
+    let shortest = strings[0];
+  
+    for (let i = 1; i < strings.length; i++) {
+      if (strings[i].length < shortest.length) {
+        shortest = strings[i];
+      }
+    }
+  
+    return shortest;
+}
+
+function getDivisors(str: string): number[] {
+    const divisors: number[] = []
+
+    for (let i = Math.floor(str.length / 2); i > 0; i--) {
+        divisors.push(i);
     }
 
-    return decompressed;
+    return divisors;
 }
